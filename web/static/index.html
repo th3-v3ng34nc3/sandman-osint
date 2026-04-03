@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>sandman osint</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <span class="logo-icon">◈</span>
+      <span class="logo-text">sandman</span>
+      <span class="logo-sub">osint</span>
+    </div>
+    <div class="header-status" id="headerStatus"></div>
+  </div>
+</header>
+
+<main>
+  <!-- Search Form -->
+  <section class="search-section" id="searchSection">
+    <div class="search-card">
+      <h2 class="search-title">Intelligence Gathering</h2>
+      <p class="search-desc">Enter a person, username, or company name to begin passive reconnaissance.</p>
+      <form id="searchForm" class="search-form">
+        <div class="search-row">
+          <input
+            type="text"
+            id="searchInput"
+            class="search-input"
+            placeholder="John Doe / j0hn_d03 / Acme Corp"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <select id="typeSelect" class="type-select">
+            <option value="person">Person</option>
+            <option value="username">Username</option>
+            <option value="company">Company</option>
+          </select>
+        </div>
+        <div class="search-options">
+          <label class="toggle-label">
+            <input type="checkbox" id="torToggle" class="toggle-input" />
+            <span class="toggle-track"></span>
+            <span class="toggle-text">🧅 Route via Tor</span>
+          </label>
+          <button type="submit" id="searchBtn" class="search-btn">
+            <span id="searchBtnText">SEARCH</span>
+            <span id="searchBtnSpinner" class="btn-spinner hidden">⟳</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- Results Panel (hidden until search starts) -->
+  <section class="results-section hidden" id="resultsSection">
+
+    <!-- Source Status Grid -->
+    <div class="sources-panel">
+      <h3 class="panel-title">Sources</h3>
+      <div class="sources-grid" id="sourcesGrid"></div>
+    </div>
+
+    <!-- Findings -->
+    <div class="findings-panel">
+      <div class="findings-header">
+        <div class="findings-title-row">
+          <h3 class="panel-title">
+            Findings
+            <span class="findings-count" id="findingsCount">0</span>
+          </h3>
+          <div class="findings-controls">
+            <select id="severityFilter" class="filter-select">
+              <option value="all">All Severities</option>
+              <option value="critical">Critical</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+              <option value="info">Info</option>
+            </select>
+            <select id="typeFilter" class="filter-select">
+              <option value="all">All Types</option>
+              <option value="breach">Breach</option>
+              <option value="profile">Profile</option>
+              <option value="social">Social</option>
+              <option value="email">Email</option>
+              <option value="network">Network</option>
+              <option value="search">Search</option>
+              <option value="darkweb">Dark Web</option>
+            </select>
+            <button id="exportBtn" class="export-btn" disabled>⬇ Export JSON</button>
+          </div>
+        </div>
+      </div>
+      <div id="findingsList" class="findings-list"></div>
+      <div id="noFindings" class="no-findings hidden">
+        <span class="no-findings-icon">◌</span>
+        <p>No findings yet. Search in progress…</p>
+      </div>
+    </div>
+
+    <!-- AI Analysis Panel -->
+    <div class="ai-panel hidden" id="aiPanel">
+      <div class="ai-header" id="aiToggle">
+        <h3 class="panel-title">
+          <span class="ai-icon">◆</span> AI Analysis
+          <span class="ai-risk" id="aiRiskBadge"></span>
+        </h3>
+        <span class="ai-chevron" id="aiChevron">▼</span>
+      </div>
+      <div class="ai-body hidden" id="aiBody">
+        <div class="ai-risk-bar">
+          <span class="ai-risk-label">Risk Score</span>
+          <div class="risk-track">
+            <div class="risk-fill" id="riskFill"></div>
+          </div>
+          <span class="ai-risk-score" id="riskScore">—</span>
+        </div>
+        <div class="ai-summary" id="aiSummary"></div>
+        <div class="ai-section" id="keyFindingsSection">
+          <h4 class="ai-section-title">Key Findings</h4>
+          <ul id="keyFindingsList" class="ai-list"></ul>
+        </div>
+        <div class="ai-section" id="connectionsSection">
+          <h4 class="ai-section-title">Cross-Source Connections</h4>
+          <ul id="connectionsList" class="ai-list"></ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error Banner -->
+    <div class="error-banner hidden" id="errorBanner">
+      <span class="error-icon">⚠</span>
+      <span id="errorMessage">An error occurred.</span>
+    </div>
+
+  </section>
+</main>
+
+<script src="/app.js"></script>
+</body>
+</html>
