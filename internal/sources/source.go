@@ -40,8 +40,13 @@ func init() {
 		&GitHubSource{},
 		&ShodanSource{},
 		&HunterSource{},
+		&EmailRepSource{},
 		&DuckDuckGoSource{},
+		&GoogleDorkSource{},
+		&CRTShSource{},
+		&WaybackSource{},
 		&UsernameSource{},
+		&IndiaSource{},
 		&TorSource{},
 	}
 }

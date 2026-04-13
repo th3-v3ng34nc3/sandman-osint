@@ -103,20 +103,42 @@ var platforms = []Platform{
 
 	// Q&A / Forums
 	{Name: "HackerNews", URLTemplate: "https://hacker-news.firebaseio.com/v0/user/{}.json", NotFoundContains: "null", Severity: result.SeverityHigh},
-	{Name: "StackOverflow", URLTemplate: "https://stackoverflow.com/users/{}}", NotFoundStatus: 404, Severity: result.SeverityMedium},
+	{Name: "StackOverflow", URLTemplate: "https://stackoverflow.com/users/{}", NotFoundStatus: 404, Severity: result.SeverityMedium},
+
+	// Design / Creative
+	{Name: "DeviantArt", URLTemplate: "https://www.deviantart.com/{}", NotFoundStatus: 404, Severity: result.SeverityLow},
+	{Name: "Behance", URLTemplate: "https://www.behance.net/{}", NotFoundStatus: 404, Severity: result.SeverityMedium},
+	{Name: "Dribbble", URLTemplate: "https://dribbble.com/{}", NotFoundStatus: 404, Severity: result.SeverityMedium},
+	{Name: "ArtStation", URLTemplate: "https://www.artstation.com/{}", NotFoundStatus: 404, Severity: result.SeverityLow},
+
+	// Competitive Programming
+	{Name: "LeetCode", URLTemplate: "https://leetcode.com/{}/", NotFoundStatus: 404, Severity: result.SeverityMedium},
+	{Name: "HackerRank", URLTemplate: "https://www.hackerrank.com/{}", NotFoundContains: "Page Not Found", Severity: result.SeverityMedium},
+	{Name: "Codeforces", URLTemplate: "https://codeforces.com/profile/{}", NotFoundContains: "Handle not found", Severity: result.SeverityMedium},
+	{Name: "Codewars", URLTemplate: "https://www.codewars.com/users/{}", NotFoundStatus: 404, Severity: result.SeverityLow},
 
 	// Other
+	{Name: "Bluesky", URLTemplate: "https://bsky.app/profile/{}", NotFoundStatus: 404, Severity: result.SeverityMedium},
+	{Name: "Mastodon.social", URLTemplate: "https://mastodon.social/@{}", NotFoundStatus: 404, Severity: result.SeverityLow},
 	{Name: "Gravatar", URLTemplate: "https://en.gravatar.com/{}", NotFoundStatus: 404, Severity: result.SeverityLow},
 	{Name: "Duolingo", URLTemplate: "https://www.duolingo.com/profile/{}", NotFoundStatus: 404, Severity: result.SeverityLow},
 	{Name: "Pastebin", URLTemplate: "https://pastebin.com/u/{}", NotFoundStatus: 404, Severity: result.SeverityMedium},
 	{Name: "Wattpad", URLTemplate: "https://www.wattpad.com/user/{}", NotFoundStatus: 404, Severity: result.SeverityLow},
-	{Name: "Twitch Clips", URLTemplate: "https://clips.twitch.tv/{}", NotFoundStatus: 404, Severity: result.SeverityLow},
 	{Name: "About.me", URLTemplate: "https://about.me/{}", NotFoundStatus: 404, Severity: result.SeverityLow},
 	{Name: "Linktree", URLTemplate: "https://linktr.ee/{}", NotFoundStatus: 404, Severity: result.SeverityLow},
 	{Name: "Ko-fi", URLTemplate: "https://ko-fi.com/{}", NotFoundStatus: 404, Severity: result.SeverityLow},
 	{Name: "Buy Me A Coffee", URLTemplate: "https://buymeacoffee.com/{}", NotFoundStatus: 404, Severity: result.SeverityLow},
 	{Name: "Fiverr", URLTemplate: "https://www.fiverr.com/{}", NotFoundContains: "Fiverr - Page Not Found", Severity: result.SeverityMedium},
 	{Name: "Upwork", URLTemplate: "https://www.upwork.com/freelancers/~{}", NotFoundStatus: 404, Severity: result.SeverityMedium},
+	{Name: "Freelancer", URLTemplate: "https://www.freelancer.com/u/{}", NotFoundStatus: 404, Severity: result.SeverityMedium},
+	{Name: "Clubhouse", URLTemplate: "https://www.joinclubhouse.com/@{}", NotFoundStatus: 404, Severity: result.SeverityMedium},
+	{Name: "Telegram", URLTemplate: "https://t.me/{}", NotFoundContains: "If you have Telegram", Severity: result.SeverityHigh},
+	{Name: "Signal", URLTemplate: "https://signal.me/#p/{}", NotFoundStatus: 404, Severity: result.SeverityHigh},
+	{Name: "VSCO", URLTemplate: "https://vsco.co/{}/gallery", NotFoundStatus: 404, Severity: result.SeverityLow},
+	{Name: "Letterboxd", URLTemplate: "https://letterboxd.com/{}/", NotFoundStatus: 404, Severity: result.SeverityLow},
+	{Name: "Goodreads", URLTemplate: "https://www.goodreads.com/{}", NotFoundStatus: 404, Severity: result.SeverityLow},
+	{Name: "GitBook", URLTemplate: "https://{}.gitbook.io/", NotFoundStatus: 404, Severity: result.SeverityLow},
+	{Name: "Hackaday.io", URLTemplate: "https://hackaday.io/{}", NotFoundStatus: 404, Severity: result.SeverityLow},
 }
 
 const workerCount = 10

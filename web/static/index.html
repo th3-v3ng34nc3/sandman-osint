@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -8,73 +8,184 @@
 </head>
 <body>
 
-<header>
+<!-- Animated background -->
+<div class="bg-canvas" aria-hidden="true">
+  <div class="bg-blob blob-a"></div>
+  <div class="bg-blob blob-b"></div>
+  <div class="bg-blob blob-c"></div>
+</div>
+
+<!-- ─── Header ──────────────────────────────────────────────── -->
+<header id="appHeader">
   <div class="header-inner">
+
     <div class="logo">
-      <span class="logo-icon">◈</span>
-      <span class="logo-text">sandman</span>
-      <span class="logo-sub">osint</span>
+      <img src="/sandman-ico.png" class="logo-ico" alt=""
+           onload="this.nextElementSibling.style.display='none'"
+           onerror="this.style.display='none'" />
+      <span class="logo-glyph">◈</span>
+      <span class="logo-name">sandman</span>
+      <span class="logo-tag">osint</span>
     </div>
-    <div class="header-status" id="headerStatus"></div>
+
+    <form id="searchForm" class="header-search" autocomplete="off">
+      <input
+        id="searchInput"
+        type="text"
+        class="h-input"
+        placeholder="person · username · company"
+        spellcheck="false"
+      />
+      <select id="typeSelect" class="h-select">
+        <option value="person">Person</option>
+        <option value="username">Username</option>
+        <option value="company">Company</option>
+      </select>
+      <label class="tor-label" title="Route via Tor (.onion)">
+        <input type="checkbox" id="torToggle" />
+        <span class="tor-pill">🧅 Tor</span>
+      </label>
+      <button type="submit" id="searchBtn" class="h-btn">
+        <span id="btnLabel">SEARCH</span>
+        <span id="btnSpinner" class="spinner hidden">⟳</span>
+      </button>
+    </form>
+
+    <div class="header-right">
+      <span id="headerStatus" class="h-status"></span>
+      <button id="themeToggle" class="icon-btn" title="Toggle theme">☀</button>
+      <button id="historyBtn" class="icon-btn" title="Search history">⏱</button>
+    </div>
+  </div>
+
+  <!-- History dropdown -->
+  <div id="historyDropdown" class="history-dropdown hidden">
+    <div class="hd-header">
+      <span class="hd-title">Recent searches</span>
+      <button id="clearHistoryBtn" class="hd-clear">Clear</button>
+    </div>
+    <div id="historyList" class="hd-list"></div>
+    <div id="historyEmpty" class="hd-empty hidden">No recent searches</div>
   </div>
 </header>
 
-<main>
-  <!-- Search Form -->
-  <section class="search-section" id="searchSection">
-    <div class="search-card">
-      <h2 class="search-title">Intelligence Gathering</h2>
-      <p class="search-desc">Enter a person, username, or company name to begin passive reconnaissance.</p>
-      <form id="searchForm" class="search-form">
-        <div class="search-row">
-          <input
-            type="text"
-            id="searchInput"
-            class="search-input"
-            placeholder="John Doe / j0hn_d03 / Acme Corp"
-            autocomplete="off"
-            spellcheck="false"
-          />
-          <select id="typeSelect" class="type-select">
-            <option value="person">Person</option>
-            <option value="username">Username</option>
-            <option value="company">Company</option>
-          </select>
-        </div>
-        <div class="search-options">
-          <label class="toggle-label">
-            <input type="checkbox" id="torToggle" class="toggle-input" />
-            <span class="toggle-track"></span>
-            <span class="toggle-text">🧅 Route via Tor</span>
-          </label>
-          <button type="submit" id="searchBtn" class="search-btn">
-            <span id="searchBtnText">SEARCH</span>
-            <span id="searchBtnSpinner" class="btn-spinner hidden">⟳</span>
-          </button>
-        </div>
-      </form>
+<!-- ─── Main ─────────────────────────────────────────────────── -->
+<main id="appMain">
+
+  <!-- Hero -->
+  <section id="heroSection" class="hero">
+    <div class="hero-gfx">
+      <img src="/sandman-ico.png" class="hero-ico" alt="" onerror="this.style.display='none'" />
+      <div class="hero-rings" aria-hidden="true">
+        <span class="ring r1"></span>
+        <span class="ring r2"></span>
+        <span class="ring r3"></span>
+      </div>
+    </div>
+    <h1 class="hero-title">Open Source Intelligence</h1>
+    <p class="hero-desc">
+      Passive reconnaissance across 12+ concurrent sources with AI-powered analysis.<br/>
+      Enter a person, username, or company to begin.
+    </p>
+    <div class="hero-sources">
+      <span class="hs">HIBP</span><span class="hs">GitHub</span><span class="hs">Shodan</span>
+      <span class="hs">Hunter.io</span><span class="hs">emailrep</span><span class="hs">DuckDuckGo</span>
+      <span class="hs">Google Dorks</span><span class="hs">crt.sh</span><span class="hs">Wayback</span>
+      <span class="hs">75+ platforms</span><span class="hs">India OSINT</span><span class="hs">Tor</span>
     </div>
   </section>
 
-  <!-- Results Panel (hidden until search starts) -->
-  <section class="results-section hidden" id="resultsSection">
-
-    <!-- Source Status Grid -->
-    <div class="sources-panel">
-      <h3 class="panel-title">Sources</h3>
-      <div class="sources-grid" id="sourcesGrid"></div>
+  <!-- Stats bar -->
+  <div id="statsBar" class="stats-bar hidden">
+    <div class="stat-pills">
+      <button class="stat-pill critical" id="sCritical" data-filter="critical">
+        <span class="sp-dot"></span><span id="nCritical">0</span> Critical
+      </button>
+      <button class="stat-pill high" id="sHigh" data-filter="high">
+        <span class="sp-dot"></span><span id="nHigh">0</span> High
+      </button>
+      <button class="stat-pill medium" id="sMedium" data-filter="medium">
+        <span class="sp-dot"></span><span id="nMedium">0</span> Medium
+      </button>
+      <button class="stat-pill low" id="sLow" data-filter="low">
+        <span class="sp-dot"></span><span id="nLow">0</span> Low
+      </button>
+      <button class="stat-pill info active" id="sAll" data-filter="all">All</button>
     </div>
+    <div id="progressInfo" class="progress-info">0 / 0 sources</div>
+  </div>
 
-    <!-- Findings -->
-    <div class="findings-panel">
-      <div class="findings-header">
-        <div class="findings-title-row">
-          <h3 class="panel-title">
-            Findings
+  <!-- Widget strip -->
+  <div id="widgetStrip" class="widget-strip hidden">
+    <div class="wg">
+      <span class="wg-ico">◈</span>
+      <div class="wg-body">
+        <span class="wg-val" id="wgTotal">0</span>
+        <span class="wg-lbl">findings</span>
+      </div>
+    </div>
+    <div class="wg wg-threat">
+      <span class="wg-ico">⚠</span>
+      <div class="wg-body">
+        <span class="wg-val" id="wgThreat">0</span>
+        <span class="wg-lbl">critical + high</span>
+      </div>
+    </div>
+    <div class="wg">
+      <span class="wg-ico">⌁</span>
+      <div class="wg-body">
+        <span class="wg-val" id="wgSources">0/0</span>
+        <span class="wg-lbl">sources</span>
+      </div>
+    </div>
+    <div class="wg">
+      <span class="wg-ico">⏱</span>
+      <div class="wg-body">
+        <span class="wg-val" id="wgTimer">0s</span>
+        <span class="wg-lbl">elapsed</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Two-column results layout -->
+  <div id="resultsGrid" class="results-grid hidden">
+
+    <!-- ── Left sidebar ── -->
+    <aside class="sidebar">
+      <div class="sidebar-block">
+        <div class="sb-title">Sources</div>
+        <div id="sourcesList" class="sources-list"></div>
+      </div>
+
+      <div class="sidebar-block" id="recentBlock" style="display:none">
+        <div class="sb-title">Recent</div>
+        <div id="recentList" class="recent-list"></div>
+      </div>
+    </aside>
+
+    <!-- ── Main content ── -->
+    <div class="main-col">
+
+      <!-- Findings panel -->
+      <div class="findings-panel">
+        <div class="findings-toolbar">
+          <div class="ft-left">
             <span class="findings-count" id="findingsCount">0</span>
-          </h3>
-          <div class="findings-controls">
-            <select id="severityFilter" class="filter-select">
+            <span class="findings-label">findings</span>
+          </div>
+          <div class="ft-right">
+            <input id="findingSearch" type="text" class="search-findings" placeholder="🔍 filter…" />
+            <select id="sourceGroupFilter" class="f-select">
+              <option value="all">All Groups</option>
+              <option value="breach">🔓 Breach</option>
+              <option value="social">👤 Social</option>
+              <option value="search">🔍 Search</option>
+              <option value="infra">🌐 Infra</option>
+              <option value="india">🇮🇳 India</option>
+              <option value="darkweb">🧅 Dark Web</option>
+            </select>
+            <select id="sourceFilter" class="f-select"><option value="all">All Sources</option></select>
+            <select id="severityFilter" class="f-select">
               <option value="all">All Severities</option>
               <option value="critical">Critical</option>
               <option value="high">High</option>
@@ -82,63 +193,73 @@
               <option value="low">Low</option>
               <option value="info">Info</option>
             </select>
-            <select id="typeFilter" class="filter-select">
+            <select id="typeFilter" class="f-select">
               <option value="all">All Types</option>
               <option value="breach">Breach</option>
               <option value="profile">Profile</option>
               <option value="social">Social</option>
               <option value="email">Email</option>
+              <option value="domain">Domain</option>
               <option value="network">Network</option>
+              <option value="archive">Archive</option>
               <option value="search">Search</option>
               <option value="darkweb">Dark Web</option>
             </select>
-            <button id="exportBtn" class="export-btn" disabled>⬇ Export JSON</button>
+            <button id="starFilterBtn" class="f-toggle-btn" title="Show starred only">☆</button>
+            <button id="exportBtn" class="export-btn" disabled title="Available when search completes">⬇ Export</button>
+          </div>
+        </div>
+
+        <div id="findingsList" class="findings-list"></div>
+
+        <div id="emptyState" class="empty-state hidden">
+          <span class="es-icon">◌</span>
+          <p id="emptyMsg">Searching…</p>
+        </div>
+      </div>
+
+      <!-- AI Analysis panel -->
+      <div id="aiPanel" class="ai-panel hidden">
+        <div id="aiToggle" class="ai-header">
+          <div class="ai-header-left">
+            <span class="ai-glyph">◆</span>
+            <span class="ai-title">AI Analysis</span>
+            <span id="aiProviderBadge" class="ai-provider"></span>
+          </div>
+          <div class="ai-header-right">
+            <span id="aiRiskLabel" class="ai-risk-label"></span>
+            <span id="aiChevron" class="chevron">▼</span>
+          </div>
+        </div>
+        <div id="aiBody" class="ai-body hidden">
+          <div class="risk-row">
+            <span class="risk-text">Risk Score</span>
+            <div class="risk-track"><div id="riskFill" class="risk-fill"></div></div>
+            <span id="riskScore" class="risk-num">—</span>
+          </div>
+          <p id="aiSummary" class="ai-summary"></p>
+          <div class="ai-cols">
+            <div class="ai-col">
+              <div class="ac-title">Key Findings</div>
+              <ul id="keyFindingsList" class="ac-list"></ul>
+            </div>
+            <div class="ai-col">
+              <div class="ac-title">Cross-Source Links</div>
+              <ul id="connectionsList" class="ac-list"></ul>
+            </div>
           </div>
         </div>
       </div>
-      <div id="findingsList" class="findings-list"></div>
-      <div id="noFindings" class="no-findings hidden">
-        <span class="no-findings-icon">◌</span>
-        <p>No findings yet. Search in progress…</p>
-      </div>
-    </div>
 
-    <!-- AI Analysis Panel -->
-    <div class="ai-panel hidden" id="aiPanel">
-      <div class="ai-header" id="aiToggle">
-        <h3 class="panel-title">
-          <span class="ai-icon">◆</span> AI Analysis
-          <span class="ai-risk" id="aiRiskBadge"></span>
-        </h3>
-        <span class="ai-chevron" id="aiChevron">▼</span>
+      <!-- Error banner -->
+      <div id="errorBanner" class="error-banner hidden">
+        <span>⚠</span><span id="errorMsg">An error occurred.</span>
+        <button id="dismissError" class="dismiss-btn">✕</button>
       </div>
-      <div class="ai-body hidden" id="aiBody">
-        <div class="ai-risk-bar">
-          <span class="ai-risk-label">Risk Score</span>
-          <div class="risk-track">
-            <div class="risk-fill" id="riskFill"></div>
-          </div>
-          <span class="ai-risk-score" id="riskScore">—</span>
-        </div>
-        <div class="ai-summary" id="aiSummary"></div>
-        <div class="ai-section" id="keyFindingsSection">
-          <h4 class="ai-section-title">Key Findings</h4>
-          <ul id="keyFindingsList" class="ai-list"></ul>
-        </div>
-        <div class="ai-section" id="connectionsSection">
-          <h4 class="ai-section-title">Cross-Source Connections</h4>
-          <ul id="connectionsList" class="ai-list"></ul>
-        </div>
-      </div>
-    </div>
 
-    <!-- Error Banner -->
-    <div class="error-banner hidden" id="errorBanner">
-      <span class="error-icon">⚠</span>
-      <span id="errorMessage">An error occurred.</span>
-    </div>
+    </div><!-- .main-col -->
+  </div><!-- .results-grid -->
 
-  </section>
 </main>
 
 <script src="/app.js"></script>

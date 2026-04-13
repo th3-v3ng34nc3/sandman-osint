@@ -1,12 +1,16 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
+	"time"
 
 	"sandman-osint/internal/ai"
 	"sandman-osint/internal/config"
@@ -57,7 +61,20 @@ func main() {
 		slog.Info("tor proxy enabled", "addr", cfg.Tor.SOCKSAddr)
 	}
 
-	if err := http.ListenAndServe(cfg.ListenAddr, mux); err != nil {
+	httpSrv := &http.Server{Addr: cfg.ListenAddr, Handler: mux}
+
+	// Graceful shutdown on SIGINT / SIGTERM
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-quit
+		slog.Info("shutting down…")
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		httpSrv.Shutdown(ctx)
+	}()
+
+	if err := httpSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		slog.Error("server error", "err", err)
 		os.Exit(1)
 	}

@@ -3,6 +3,7 @@ package engine
 import (
 	"context"
 	"log/slog"
+	"strings"
 	"sync"
 	"time"
 
@@ -16,6 +17,8 @@ import (
 	"sandman-osint/internal/sources"
 	"sandman-osint/internal/sse"
 )
+
+const searchTimeout = 6 * time.Minute
 
 // Engine orchestrates concurrent searches across all registered sources.
 type Engine struct {
@@ -37,8 +40,8 @@ func New(cfg config.Config, clients sources.HTTPClients, broker *sse.Broker, sto
 	}
 }
 
-// Submit validates the request, generates permutations, persists the query,
-// and launches the search asynchronously. It returns the query ID immediately.
+// Submit generates permutations, stores the query, and starts the search async.
+// Returns the query ID immediately.
 func (e *Engine) Submit(raw string, targetType query.TargetType, useTor bool) string {
 	q := query.Query{
 		ID:        uuid.New().String(),
@@ -49,18 +52,17 @@ func (e *Engine) Submit(raw string, targetType query.TargetType, useTor bool) st
 		CreatedAt: time.Now(),
 	}
 	e.store.Create(q)
-	go e.run(context.Background(), q)
+	go e.run(q)
 	return q.ID
 }
 
-// run executes the search fan-out. It is called in a goroutine by Submit.
-func (e *Engine) run(ctx context.Context, q query.Query) {
-	slog.Info("search started", "id", q.ID, "target", q.Raw, "type", q.Type, "variants", len(q.Variants))
+// run executes the full search lifecycle. Called in a goroutine by Submit.
+func (e *Engine) run(q query.Query) {
+	ctx, cancel := context.WithTimeout(context.Background(), searchTimeout)
+	defer cancel()
 
-	findingsCh := make(chan result.Finding, 512)
-
-	// Fan out to all sources concurrently.
-	var wg sync.WaitGroup
+	// Determine which sources will run
+	var active []sources.Source
 	for _, src := range sources.Registry {
 		if !supportsType(src, q.Type) {
 			e.skipSource(q.ID, src.Name())
@@ -74,7 +76,28 @@ func (e *Engine) run(ctx context.Context, q query.Query) {
 			e.skipSource(q.ID, src.Name())
 			continue
 		}
+		active = append(active, src)
+	}
 
+	slog.Info("search started",
+		"id", q.ID,
+		"target", q.Raw,
+		"type", q.Type,
+		"variants", len(q.Variants),
+		"active_sources", len(active),
+	)
+
+	// Announce total source count so the UI can show X/N progress
+	e.broker.Publish(q.ID, sse.Event{Name: "search_meta", Data: map[string]any{
+		"total_sources": len(active) + countSkipped(sources.Registry, active),
+		"variants":      len(q.Variants),
+	}})
+
+	dedup := newDeduper()
+	findingsCh := make(chan result.Finding, 512)
+
+	var wg sync.WaitGroup
+	for _, src := range active {
 		wg.Add(1)
 		go func(s sources.Source) {
 			defer wg.Done()
@@ -82,25 +105,27 @@ func (e *Engine) run(ctx context.Context, q query.Query) {
 		}(src)
 	}
 
-	// Collector: relay findings to broker and store while sources are running.
+	// Collector: relay deduplicated findings to broker + store
 	collectorDone := make(chan struct{})
 	go func() {
 		defer close(collectorDone)
 		for f := range findingsCh {
+			if !dedup.add(f) {
+				continue // duplicate — drop
+			}
 			e.store.AddFinding(q.ID, f)
 			e.broker.Publish(q.ID, sse.Event{Name: "finding", Data: f})
 		}
 	}()
 
-	// Wait for all sources to finish, then close the findings channel.
 	wg.Wait()
 	close(findingsCh)
-	<-collectorDone // drain remaining findings
+	<-collectorDone
 
-	// Run AI analysis if configured.
-	if e.analyzer != nil && e.cfg.ClaudeKey != "" {
+	// AI analysis
+	if e.analyzer != nil {
 		res, _ := e.store.Get(q.ID)
-		if res != nil {
+		if res != nil && len(res.Findings) > 0 {
 			analysis, err := e.analyzer.Analyze(ctx, q, res.Findings)
 			if err != nil {
 				slog.Warn("AI analysis failed", "err", err)
@@ -120,7 +145,6 @@ func (e *Engine) run(ctx context.Context, q query.Query) {
 	slog.Info("search complete", "id", q.ID, "findings", e.store.Count(q.ID))
 }
 
-// runSource executes a single source and publishes status updates.
 func (e *Engine) runSource(ctx context.Context, src sources.Source, q query.Query, out chan<- result.Finding) {
 	meta := result.SourceMeta{Name: src.Name(), Status: "running"}
 	e.store.UpsertSource(q.ID, meta)
@@ -131,9 +155,13 @@ func (e *Engine) runSource(ctx context.Context, src sources.Source, q query.Quer
 	finalMeta.DurationMs = time.Since(start).Milliseconds()
 
 	if err != nil {
-		slog.Warn("source error", "source", src.Name(), "err", err)
-		finalMeta.Status = "error"
-		finalMeta.Error = err.Error()
+		if err == context.DeadlineExceeded {
+			finalMeta.Status = "timeout"
+		} else {
+			finalMeta.Status = "error"
+			finalMeta.Error = err.Error()
+		}
+		slog.Warn("source finished with error", "source", src.Name(), "err", err)
 	} else {
 		finalMeta.Status = "done"
 	}
@@ -148,6 +176,36 @@ func (e *Engine) skipSource(queryID, name string) {
 	e.broker.Publish(queryID, sse.Event{Name: "source_update", Data: meta})
 }
 
+// ─── Deduplication ───────────────────────────────────────────────────────────
+
+type deduper struct {
+	mu   sync.Mutex
+	seen map[string]bool
+}
+
+func newDeduper() *deduper {
+	return &deduper{seen: make(map[string]bool)}
+}
+
+// add returns true if the finding is new, false if it was already seen.
+func (d *deduper) add(f result.Finding) bool {
+	key := f.Source + "|" + f.Type + "|"
+	if f.URL != "" {
+		key += strings.ToLower(f.URL)
+	} else {
+		key += strings.ToLower(f.Title)
+	}
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if d.seen[key] {
+		return false
+	}
+	d.seen[key] = true
+	return true
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
 func supportsType(src sources.Source, t query.TargetType) bool {
 	for _, supported := range src.TargetTypes() {
 		if supported == t {
@@ -155,4 +213,18 @@ func supportsType(src sources.Source, t query.TargetType) bool {
 		}
 	}
 	return false
+}
+
+func countSkipped(all []sources.Source, active []sources.Source) int {
+	activeSet := make(map[string]bool, len(active))
+	for _, s := range active {
+		activeSet[s.Name()] = true
+	}
+	count := 0
+	for _, s := range all {
+		if !activeSet[s.Name()] {
+			count++
+		}
+	}
+	return count
 }
